@@ -1,2 +1,2 @@
-# domain-modelling-made-functional-in-scala
-Examples from "Domain Modelling Made Functional" book implemented in Scala
+# Domain Modelling Made Functional in Scala
+Examples from ["Domain Modelling Made Functional"](https://pragprog.com/book/swdddf/domain-modeling-made-functional) book implemented in Scala
