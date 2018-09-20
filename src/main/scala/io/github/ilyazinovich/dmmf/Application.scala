@@ -1,30 +1,24 @@
 package io.github.ilyazinovich.dmmf
 
-class App {
+object Application extends App {
 
 }
 
 case class Error(cause: String)
 
-case class String50 private (value: String)
+case class String50 private(value: String)
 
 object String50 {
 
   private def apply(value: String) = new String50(value)
 
-  def unapply(arg: String50): Option[String] = Some(arg.value)
-
-  def create(value: String): Either[Error, Option[String50]] = {
-    value match {
-      case "" => Right(None)
-      case string =>
-        if (string.length <= 50) Right(Some(new String50(string)))
-        else Left(Error("String is longer than 50 characters"))
-    }
+  def create(value: String): Either[Error, String50] = {
+    if (value.length <= 50) Right(new String50(value))
+    else Left(Error("String is longer than 50 characters"))
   }
 }
 
-case class EmailAddress private (value: String)
+case class EmailAddress private(value: String)
 
 object EmailAddress {
 
