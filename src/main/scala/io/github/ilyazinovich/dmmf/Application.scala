@@ -1,8 +1,5 @@
 package io.github.ilyazinovich.dmmf
 
-import squants.{Dimensionless, Quantity}
-import squants.mass.{Kilograms, Mass}
-
 object Application extends App {
 
 }
@@ -118,22 +115,22 @@ object ProductCode {
   }
 }
 
-sealed trait ProductQuantity
+sealed trait OrderQuantity
 
-case class UnitQuantity private(integer: Int) extends ProductQuantity
+case class UnitQuantity private(integer: Int) extends OrderQuantity
 
 object UnitQuantity {
 
   private def apply(integer: Int): UnitQuantity = new UnitQuantity(integer)
 
-  def create(integer: Integer): Either[Error, UnitQuantity] = {
+  def create(integer: Int): Either[Error, UnitQuantity] = {
     if (integer < 1) Left(Error("Input integer is less than 1"))
     else if (integer > 1000) Left(Error("Input integer is more than 1000"))
     else Right(new UnitQuantity(integer))
   }
 }
 
-case class KilogramQuantity private(double: Double) extends ProductQuantity
+case class KilogramQuantity private(double: Double) extends OrderQuantity
 
 object KilogramQuantity {
 
@@ -145,3 +142,63 @@ object KilogramQuantity {
     else Right(new KilogramQuantity(double))
   }
 }
+
+object OrderQuantity {
+
+  def decimalQuantity(orderQuantity: OrderQuantity): Double = {
+    orderQuantity match {
+      case UnitQuantity(integer) => integer.toDouble
+      case KilogramQuantity(double) => double
+    }
+  }
+
+  def create(productCode: ProductCode, quantity: Double): Either[Error, OrderQuantity] = {
+    productCode match {
+      case WidgetCode(_) => UnitQuantity.create(quantity.toInt)
+      case GadgetCode(_) => KilogramQuantity.create(quantity)
+      case _ => Left(Error(s"Unrecognised product code: $productCode"))
+    }
+  }
+}
+
+case class Price private(double: Double)
+
+object Price {
+
+  def value(price: Price): Double = price match {
+    case Price(value) => value
+  }
+
+  private def apply(double: Double): Price = new Price(double)
+
+  def create(double: Double): Either[Error, Price] = {
+    if (double < 0.0D) Left(Error(s"Price cannot be less than 0.0"))
+    else if (double > 1000.00D) Left(Error(s"Price cannot be more than 1000.00"))
+    else Right(new Price(double))
+  }
+
+  def multiply(price: Price, quantity: OrderQuantity): Either[Error, Price] = {
+    val decimalQuantity = OrderQuantity.decimalQuantity(quantity)
+    Price.create(decimalQuantity * price.double)
+  }
+}
+
+case class BillingAmount private(double: Double)
+
+object BillingAmount {
+
+  private def apply(double: Double): BillingAmount = new BillingAmount(double)
+
+  def create(double: Double): Either[Error, BillingAmount] = {
+    if (double < 0.0D) Left(Error(s"Billing amount cannot be less than 0.0"))
+    else if (double > 10000.00D) Left(Error(s"Billing amount cannot be more than 10000.00"))
+    else Right(new BillingAmount(double))
+  }
+
+  def total(prices: List[Price]): Either[Error, BillingAmount] = {
+    val totalPrice = prices.map(Price.value).sum
+    create(totalPrice)
+  }
+}
+
+case class PdfAttachment(name: String, bytes: Array[Byte])
