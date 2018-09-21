@@ -8,6 +8,28 @@ case class Error(cause: String)
 
 case class String50 private(string: String)
 
+case class EmailAddress private(string: String)
+
+case class ZipCode private(string: String)
+
+case class OrderId private(string: String)
+
+case class OrderLineId private(string: String)
+
+sealed trait ProductCode
+case class WidgetCode private(string: String) extends ProductCode
+case class GadgetCode private(string: String) extends ProductCode
+
+sealed trait OrderQuantity
+case class UnitQuantity private(integer: Int) extends OrderQuantity
+case class KilogramQuantity private(double: Double) extends OrderQuantity
+
+case class Price private(double: Double)
+
+case class BillingAmount private(double: Double)
+
+case class PdfAttachment(name: String, bytes: Array[Byte])
+
 object String50 {
 
   private def apply(string: String) = new String50(string)
@@ -17,8 +39,6 @@ object String50 {
     else Left(Error("String is longer than 50 characters"))
   }
 }
-
-case class EmailAddress private(string: String)
 
 object EmailAddress {
 
@@ -34,8 +54,6 @@ object EmailAddress {
   }
 }
 
-case class ZipCode private(string: String)
-
 object ZipCode {
 
   private def apply(string: String): ZipCode = new ZipCode(string)
@@ -45,8 +63,6 @@ object ZipCode {
     else Left(Error("Input is not 5-digit string"))
   }
 }
-
-case class OrderId private(string: String)
 
 object OrderId {
 
@@ -63,8 +79,6 @@ object OrderId {
   }
 }
 
-case class OrderLineId private(string: String)
-
 object OrderLineId {
 
   private def apply(string: String): OrderLineId = new OrderLineId(string)
@@ -80,10 +94,6 @@ object OrderLineId {
   }
 }
 
-sealed trait ProductCode
-
-case class WidgetCode private(string: String) extends ProductCode
-
 object WidgetCode {
 
   private def apply(string: String): WidgetCode = new WidgetCode(string)
@@ -93,8 +103,6 @@ object WidgetCode {
     else Left(Error("Input is not a 5 chars string starting with W"))
   }
 }
-
-case class GadgetCode private(string: String) extends ProductCode
 
 object GadgetCode {
 
@@ -115,10 +123,6 @@ object ProductCode {
   }
 }
 
-sealed trait OrderQuantity
-
-case class UnitQuantity private(integer: Int) extends OrderQuantity
-
 object UnitQuantity {
 
   private def apply(integer: Int): UnitQuantity = new UnitQuantity(integer)
@@ -129,8 +133,6 @@ object UnitQuantity {
     else Right(new UnitQuantity(integer))
   }
 }
-
-case class KilogramQuantity private(double: Double) extends OrderQuantity
 
 object KilogramQuantity {
 
@@ -161,8 +163,6 @@ object OrderQuantity {
   }
 }
 
-case class Price private(double: Double)
-
 object Price {
 
   def value(price: Price): Double = price match {
@@ -183,8 +183,6 @@ object Price {
   }
 }
 
-case class BillingAmount private(double: Double)
-
 object BillingAmount {
 
   private def apply(double: Double): BillingAmount = new BillingAmount(double)
@@ -200,5 +198,3 @@ object BillingAmount {
     create(totalPrice)
   }
 }
-
-case class PdfAttachment(name: String, bytes: Array[Byte])
