@@ -1,9 +1,5 @@
 package io.github.ilyazinovich.dmmf
 
-object Application extends App {
-
-}
-
 case class Error(cause: String)
 
 case class String50 private(string: String)
@@ -17,12 +13,16 @@ case class OrderId private(string: String)
 case class OrderLineId private(string: String)
 
 sealed trait ProductCode
+
 case class WidgetCode private(string: String) extends ProductCode
+
 case class GadgetCode private(string: String) extends ProductCode
 
-sealed trait OrderQuantity
-case class UnitQuantity private(integer: Int) extends OrderQuantity
-case class KilogramQuantity private(double: Double) extends OrderQuantity
+sealed trait ProductQuantity
+
+case class UnitQuantity private(integer: Int) extends ProductQuantity
+
+case class KilogramQuantity private(double: Double) extends ProductQuantity
 
 case class Price private(double: Double)
 
@@ -116,7 +116,18 @@ object GadgetCode {
 
 object ProductCode {
 
-  def create(string: String): Either[Error, ProductCode] = {
+  type CheckProductCodeExist = ProductCode => Boolean
+
+  def create(string: String, checkProductCodeExist: CheckProductCodeExist): Either[Error, ProductCode] = {
+    createWithoutVerifyingExistence(string) match {
+      case Right(productCode) =>
+        if (checkProductCodeExist(productCode)) Right(productCode)
+        else Left(Error(s"Product code does not exist: $string"))
+      case _ => _
+    }
+  }
+
+  private def createWithoutVerifyingExistence(string: String): Either[Error, ProductCode] = {
     if (string.startsWith("W")) WidgetCode.create(string)
     else if (string.startsWith("G")) GadgetCode.create(string)
     else Left(Error(s"Unrecognized product code format: $string"))
@@ -145,16 +156,16 @@ object KilogramQuantity {
   }
 }
 
-object OrderQuantity {
+object ProductQuantity {
 
-  def decimalQuantity(orderQuantity: OrderQuantity): Double = {
+  def decimalQuantity(orderQuantity: ProductQuantity): Double = {
     orderQuantity match {
       case UnitQuantity(integer) => integer.toDouble
       case KilogramQuantity(double) => double
     }
   }
 
-  def create(productCode: ProductCode, quantity: Double): Either[Error, OrderQuantity] = {
+  def create(productCode: ProductCode, quantity: Double): Either[Error, ProductQuantity] = {
     productCode match {
       case WidgetCode(_) => UnitQuantity.create(quantity.toInt)
       case GadgetCode(_) => KilogramQuantity.create(quantity)
@@ -177,8 +188,8 @@ object Price {
     else Right(new Price(double))
   }
 
-  def multiply(price: Price, quantity: OrderQuantity): Either[Error, Price] = {
-    val decimalQuantity = OrderQuantity.decimalQuantity(quantity)
+  def multiply(price: Price, quantity: ProductQuantity): Either[Error, Price] = {
+    val decimalQuantity = ProductQuantity.decimalQuantity(quantity)
     Price.create(decimalQuantity * price.double)
   }
 }
