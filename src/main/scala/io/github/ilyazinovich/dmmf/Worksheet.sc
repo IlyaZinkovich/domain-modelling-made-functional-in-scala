@@ -1,8 +1,7 @@
-import io.github.ilyazinovich.dmmf.{EmailAddress, String50, ZipCode}
+import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
+import io.github.ilyazinovich.dmmf._
 
-String50.create("ilya.zinkovich@github.io") match {
-  case Right(String50(string)) => EmailAddress.create(string)
-  case Left(error) => Left(error)
-}
-
-ZipCode.create("12345")
+val line = UnvalidatedOrderLine("1", "W123", -10.0)
+val lines = List(line)
+val checkProductCodeExist: CheckProductCodeExist = (_: ProductCode) => true
+PlaceOrder.validateOrderLines(lines, checkProductCodeExist)
