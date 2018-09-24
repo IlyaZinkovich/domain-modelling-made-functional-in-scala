@@ -5,6 +5,8 @@ import cats.data.Validated._
 import cats.data._
 import cats.implicits._
 import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
+import cats.instances.list._
+import cats.syntax.traverse._
 
 trait PlaceOrder {
 
@@ -24,18 +26,21 @@ trait PlaceOrder {
     checkAddressExist(address).toValidated
   }
 
+
   def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
                          checkProductCodeExist: CheckProductCodeExist): ValidatedNel[Error, List[OrderLine]] = {
-    orderLines.map { orderLine =>
+    val validatedOrderLines = orderLines.map { orderLine =>
       val validatedOrderLineId = OrderLineId.create(orderLine.orderLineId).toValidatedNel
       val validatedProductCode = ProductCode.create(orderLine.productCode, checkProductCodeExist).toValidatedNel
       val validatedProductQuantity = validatedProductCode.andThen { productCode =>
         ProductQuantity.create(productCode, orderLine.quantity).toValidatedNel
       }
-      Apply[ValidatedNel[Error, ?]].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
+      type ValidatedOrderLinePart[T] = ValidatedNel[Error, T]
+      Apply[ValidatedOrderLinePart].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
         case (orderLineId, productCode, productQuantity) => OrderLine(orderLineId, productCode, productQuantity)
       }
     }
+    val sequence: Nothing[List[Nothing]] = validatedOrderLines.sequence
   }
 }
 
