@@ -2,15 +2,17 @@ package io.github.ilyazinovich.dmmf
 
 import cats.Apply
 import cats.data.Validated._
-import cats.data._
-import cats.implicits._
-import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
+import cats.data.{Validated, ValidatedNel}
 import cats.instances.list._
+import cats.syntax.either._
 import cats.syntax.traverse._
+import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
+
 
 trait PlaceOrder {
 
   type CheckAddressExist = UnvalidatedAddress => Either[Error, Address]
+  type ValidatedOrderLinePart[T] = ValidatedNel[Error, T]
 
   def validateOrder(checkProductCodeExists: CheckProductCodeExist,
                     checkAddressExist: CheckAddressExist,
@@ -29,18 +31,16 @@ trait PlaceOrder {
 
   def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
                          checkProductCodeExist: CheckProductCodeExist): ValidatedNel[Error, List[OrderLine]] = {
-    val validatedOrderLines = orderLines.map { orderLine =>
+    orderLines.traverse[ValidatedOrderLinePart, OrderLine] { orderLine =>
       val validatedOrderLineId = OrderLineId.create(orderLine.orderLineId).toValidatedNel
       val validatedProductCode = ProductCode.create(orderLine.productCode, checkProductCodeExist).toValidatedNel
       val validatedProductQuantity = validatedProductCode.andThen { productCode =>
         ProductQuantity.create(productCode, orderLine.quantity).toValidatedNel
       }
-      type ValidatedOrderLinePart[T] = ValidatedNel[Error, T]
       Apply[ValidatedOrderLinePart].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
         case (orderLineId, productCode, productQuantity) => OrderLine(orderLineId, productCode, productQuantity)
       }
     }
-    val sequence: Nothing[List[Nothing]] = validatedOrderLines.sequence
   }
 }
 
