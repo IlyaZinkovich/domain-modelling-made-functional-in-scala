@@ -1,8 +1,8 @@
 package io.github.ilyazinovich.dmmf
 
 import cats.Apply
-import cats.data._
 import cats.data.Validated._
+import cats.data._
 import cats.implicits._
 import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
 
@@ -12,7 +12,8 @@ trait PlaceOrder {
 
   def validateOrder(checkProductCodeExists: CheckProductCodeExist,
                     checkAddressExist: CheckAddressExist,
-                    unvalidatedOrder: UnvalidatedOrder): ValidatedNel[Error, Order] = {
+                    unvalidatedOrder: UnvalidatedOrder): Unit = {
+    //ValidatedNel[Error, Order] = {
   }
 
   def validateOrderId(orderId: String): Validated[Error, OrderId] = {
@@ -26,12 +27,12 @@ trait PlaceOrder {
   def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
                          checkProductCodeExist: CheckProductCodeExist): ValidatedNel[Error, List[OrderLine]] = {
     orderLines.map { orderLine =>
-      val validatedOrderLineId: Validated[Error, OrderLineId] = OrderLineId.create(orderLine.orderLineId).toValidated
-      val validatedProductCode: Validated[Error, ProductCode] = ProductCode.create(orderLine.productCode, checkProductCodeExist).toValidated
-      val validatedProductQuantity: Validated[Error, ProductQuantity] = validatedProductCode.andThen { productCode =>
-        ProductQuantity.create(productCode, orderLine.quantity).toValidated
+      val validatedOrderLineId = OrderLineId.create(orderLine.orderLineId).toValidatedNel
+      val validatedProductCode = ProductCode.create(orderLine.productCode, checkProductCodeExist).toValidatedNel
+      val validatedProductQuantity = validatedProductCode.andThen { productCode =>
+        ProductQuantity.create(productCode, orderLine.quantity).toValidatedNel
       }
-      Apply[Validated[Error, ?]].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
+      Apply[ValidatedNel[Error, ?]].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
         case (orderLineId, productCode, productQuantity) => OrderLine(orderLineId, productCode, productQuantity)
       }
     }

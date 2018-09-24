@@ -123,7 +123,7 @@ object ProductCode {
       case Right(productCode) =>
         if (checkProductCodeExist(productCode)) Right(productCode)
         else Left(Error(s"Product code does not exist: $string"))
-      case _ => _
+      case Left(error) => Left(error)
     }
   }
 
