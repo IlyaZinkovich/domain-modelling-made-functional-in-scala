@@ -2,7 +2,7 @@ package io.github.ilyazinovich.dmmf
 
 import cats.Apply
 import cats.data.Validated._
-import cats.data.{Validated, ValidatedNel}
+import cats.data.{NonEmptyList, Validated, ValidatedNel}
 import cats.instances.list._
 import cats.syntax.either._
 import cats.syntax.traverse._
@@ -16,7 +16,6 @@ object PlaceOrder {
   def validateOrder(checkProductCodeExists: CheckProductCodeExist,
                     checkAddressExist: CheckAddressExist,
                     unvalidatedOrder: UnvalidatedOrder): Unit = {
-    //ValidatedNel[Error, Order] = {
   }
 
   def validateOrderId(orderId: String): Validated[Error, OrderId] = {
@@ -27,14 +26,14 @@ object PlaceOrder {
     checkAddressExist(address).toValidated
   }
 
-
   def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
                          checkProductCodeExist: CheckProductCodeExist): ValidatedNel[Error, List[OrderLine]] = {
     orderLines.traverse[ValidatedOrderLinePart, OrderLine] { orderLine =>
       val validatedOrderLineId = OrderLineId.create(orderLine.orderLineId).toValidatedNel
       val validatedProductCode = ProductCode.create(orderLine.productCode, checkProductCodeExist).toValidatedNel
-      val validatedProductQuantity = validatedProductCode.andThen { productCode =>
-        ProductQuantity.create(productCode, orderLine.quantity).toValidatedNel
+      val validatedProductQuantity = validatedProductCode match {
+        case Valid(productCode) => ProductQuantity.create(productCode, orderLine.quantity).toValidatedNel
+        case Invalid(_) => Invalid(NonEmptyList.of(Error("Unable to validate quantity because of invalid product code")))
       }
       Apply[ValidatedOrderLinePart].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
         case (orderLineId, productCode, productQuantity) => OrderLine(orderLineId, productCode, productQuantity)

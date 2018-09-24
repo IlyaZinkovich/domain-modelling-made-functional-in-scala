@@ -1,14 +1,19 @@
 package io.github.ilyazinovich.dmmf
 
+import cats.data.NonEmptyList
+import cats.data.Validated.Invalid
+import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
 import org.scalatest.{FlatSpec, Matchers}
 
 class AppTest extends FlatSpec with Matchers {
 
-  "String50" should "return Right None for empty String" in {
-    String50.create("") should be (Right(None))
-  }
-
-  "String50" should "return Left Error for non-empty String longer than 50 chars" in {
-    String50.create("a" * 51) should be (Left(Error("String is longer than 50 characters")))
+  "PlaceOrder" should "invalidate order lines" in {
+    val line = UnvalidatedOrderLine("1", "W123", -10.0)
+    val lines = List(line)
+    val checkProductCodeExist: CheckProductCodeExist = (_: ProductCode) => true
+    assertResult(Invalid(NonEmptyList.of(Error("Input is not a 5 chars string starting with W"),
+      Error("Unable to validate quantity because of invalid product code")))) {
+      PlaceOrder.validateOrderLines(lines, checkProductCodeExist)
+    }
   }
 }
