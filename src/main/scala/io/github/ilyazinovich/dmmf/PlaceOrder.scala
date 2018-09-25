@@ -38,6 +38,32 @@ object PlaceOrder {
       Apply[ValidatedOrderLinePart].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
         case (orderLineId, productCode, productQuantity) => OrderLine(orderLineId, productCode, productQuantity)
       }
+
+      val function: (OrderLineId, ProductCode, ProductQuantity) => OrderLine = createOrderLine
+      val appliedOrderLineId: Validated[NonEmptyList[Error], ProductCode => ProductQuantity => OrderLine] = map(function.curried.apply(_), validatedOrderLineId)
+      val appliedProductCode: Validated[NonEmptyList[Error], ProductQuantity => OrderLine] = apply(appliedOrderLineId, validatedProductCode)
+      val appliedProductQuantity: Validated[NonEmptyList[Error], OrderLine] = apply(appliedProductCode, validatedProductQuantity)
+      appliedProductQuantity
+    }
+  }
+
+  def createOrderLine(orderLineId: OrderLineId, productCode: ProductCode, quantity: ProductQuantity): OrderLine = {
+    OrderLine(orderLineId, productCode, quantity)
+  }
+
+  def map[A, B](func: A => B, value: ValidatedNel[Error, A]): Validated[NonEmptyList[Error], B] = {
+    value match {
+      case Valid(result) => Valid(func.apply(result))
+      case Invalid(errors) => Invalid(errors)
+    }
+  }
+
+  def apply[A, B](func: ValidatedNel[Error, A => B], value: ValidatedNel[Error, A]): Validated[NonEmptyList[Error], B] = {
+    (func, value) match {
+      case (Valid(validFunc), Valid(valueResult)) => Valid(validFunc.apply(valueResult))
+      case (Valid(_), Invalid(valueErrors)) => Invalid(valueErrors)
+      case (Invalid(funcErrors), Valid(_)) => Invalid(funcErrors)
+      case (Invalid(funcErrors), Invalid(valueErrors)) => Invalid(funcErrors.concatNel(valueErrors))
     }
   }
 }
@@ -53,4 +79,3 @@ case class Order(orderId: OrderId, address: Address, orderLines: List[OrderLine]
 case class Address(addressLine: String)
 
 case class OrderLine(orderLineId: OrderLineId, productCode: ProductCode, quantity: ProductQuantity)
-
