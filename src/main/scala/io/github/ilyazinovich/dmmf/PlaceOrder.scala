@@ -39,16 +39,14 @@ object PlaceOrder {
         case (orderLineId, productCode, productQuantity) => OrderLine(orderLineId, productCode, productQuantity)
       }
 
-      val function: (OrderLineId, ProductCode, ProductQuantity) => OrderLine = createOrderLine
-      val appliedOrderLineId: Validated[NonEmptyList[Error], ProductCode => ProductQuantity => OrderLine] = map(function.curried.apply(_), validatedOrderLineId)
-      val appliedProductCode: Validated[NonEmptyList[Error], ProductQuantity => OrderLine] = apply(appliedOrderLineId, validatedProductCode)
-      val appliedProductQuantity: Validated[NonEmptyList[Error], OrderLine] = apply(appliedProductCode, validatedProductQuantity)
-      appliedProductQuantity
+      apply(
+        apply(
+          map((OrderLine _).curried.apply(_), validatedOrderLineId),
+          validatedProductCode
+        ),
+        validatedProductQuantity
+      )
     }
-  }
-
-  def createOrderLine(orderLineId: OrderLineId, productCode: ProductCode, quantity: ProductQuantity): OrderLine = {
-    OrderLine(orderLineId, productCode, quantity)
   }
 
   def map[A, B](func: A => B, value: ValidatedNel[Error, A]): Validated[NonEmptyList[Error], B] = {
