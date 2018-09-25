@@ -35,28 +35,50 @@ object PlaceOrder {
         case Valid(productCode) => ProductQuantity.create(productCode, orderLine.quantity).toValidatedNel
         case Invalid(_) => Invalid(NonEmptyList.of(Error("Unable to validate quantity because of invalid product code")))
       }
-      Apply[ValidatedOrderLinePart].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
-        case (orderLineId, productCode, productQuantity) => OrderLine(orderLineId, productCode, productQuantity)
-      }
-
-      apply(
-        apply(
-          map((OrderLine _).curried.apply(_), validatedOrderLineId),
-          validatedProductCode
-        ),
-        validatedProductQuantity
-      )
+      catsApplicative(validatedOrderLineId, validatedProductCode, validatedProductQuantity)
+      liftAndApply(validatedOrderLineId, validatedProductCode, validatedProductQuantity)
+      mapAndApply(validatedOrderLineId, validatedProductCode, validatedProductQuantity)
     }
   }
 
-  def map[A, B](func: A => B, value: ValidatedNel[Error, A]): Validated[NonEmptyList[Error], B] = {
+  private def mapAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId], validatedProductCode: ValidatedNel[Error, ProductCode], validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
+    apply(
+      apply(
+        map((OrderLine.apply _).curried, validatedOrderLineId),
+        validatedProductCode
+      ),
+      validatedProductQuantity
+    )
+  }
+
+  private def liftAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId], validatedProductCode: ValidatedNel[Error, ProductCode], validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
+    apply(
+      apply(
+        apply(
+          lift((OrderLine.apply _).curried), validatedOrderLineId
+        ), validatedProductCode
+      ), validatedProductQuantity
+    )
+  }
+
+  private def catsApplicative(validatedOrderLineId: ValidatedNel[Error, OrderLineId], validatedProductCode: ValidatedNel[Error, ProductCode], validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
+    Apply[ValidatedOrderLinePart].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
+      case (orderLineId, productCode, productQuantity) => OrderLine(orderLineId, productCode, productQuantity)
+    }
+  }
+
+  def lift[A, B](func: A => B): ValidatedNel[Error, A => B] = {
+    Valid.apply(func)
+  }
+
+  def map[A, B](func: A => B, value: ValidatedNel[Error, A]): ValidatedNel[Error, B] = {
     value match {
       case Valid(result) => Valid(func.apply(result))
       case Invalid(errors) => Invalid(errors)
     }
   }
 
-  def apply[A, B](func: ValidatedNel[Error, A => B], value: ValidatedNel[Error, A]): Validated[NonEmptyList[Error], B] = {
+  def apply[A, B](func: ValidatedNel[Error, A => B], value: ValidatedNel[Error, A]): ValidatedNel[Error, B] = {
     (func, value) match {
       case (Valid(validFunc), Valid(valueResult)) => Valid(validFunc.apply(valueResult))
       case (Valid(_), Invalid(valueErrors)) => Invalid(valueErrors)
