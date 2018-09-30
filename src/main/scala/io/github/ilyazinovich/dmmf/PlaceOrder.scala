@@ -2,7 +2,7 @@ package io.github.ilyazinovich.dmmf
 
 import cats.Apply
 import cats.data.Validated._
-import cats.data.{NonEmptyList, Validated, ValidatedNel}
+import cats.data.{NonEmptyList, ValidatedNel}
 import cats.instances.list._
 import cats.syntax.either._
 import cats.syntax.traverse._
@@ -15,15 +15,22 @@ object PlaceOrder {
 
   def validateOrder(checkProductCodeExists: CheckProductCodeExist,
                     checkAddressExist: CheckAddressExist,
-                    unvalidatedOrder: UnvalidatedOrder): Unit = {
+                    unvalidatedOrder: UnvalidatedOrder): ValidatedNel[Error, ValidatedOrder] = {
+    apply(
+      apply(
+        apply(
+          lift((ValidatedOrder.apply _).curried), validateOrderId(unvalidatedOrder.orderId)
+        ), validateAddress(unvalidatedOrder.address, checkAddressExist)
+      ), validateOrderLines(unvalidatedOrder.orderLines, checkProductCodeExists)
+    )
   }
 
-  def validateOrderId(orderId: String): Validated[Error, OrderId] = {
-    OrderId.create(orderId).toValidated
+  def validateOrderId(orderId: String): ValidatedNel[Error, OrderId] = {
+    OrderId.create(orderId).toValidatedNel
   }
 
-  def validateAddress(address: UnvalidatedAddress, checkAddressExist: CheckAddressExist): Validated[Error, Address] = {
-    checkAddressExist(address).toValidated
+  def validateAddress(address: UnvalidatedAddress, checkAddressExist: CheckAddressExist): ValidatedNel[Error, Address] = {
+    checkAddressExist(address).toValidatedNel
   }
 
   def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
@@ -35,20 +42,8 @@ object PlaceOrder {
         case Valid(productCode) => ProductQuantity.create(productCode, orderLine.quantity).toValidatedNel
         case Invalid(_) => Invalid(NonEmptyList.of(Error("Unable to validate quantity because of invalid product code")))
       }
-      catsApplicative(validatedOrderLineId, validatedProductCode, validatedProductQuantity)
       liftAndApply(validatedOrderLineId, validatedProductCode, validatedProductQuantity)
-      mapAndApply(validatedOrderLineId, validatedProductCode, validatedProductQuantity)
     }
-  }
-
-  private def mapAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId], validatedProductCode: ValidatedNel[Error, ProductCode], validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
-    apply(
-      apply(
-        map((OrderLine.apply _).curried, validatedOrderLineId),
-        validatedProductCode
-      ),
-      validatedProductQuantity
-    )
   }
 
   private def liftAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId], validatedProductCode: ValidatedNel[Error, ProductCode], validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
@@ -58,6 +53,16 @@ object PlaceOrder {
           lift((OrderLine.apply _).curried), validatedOrderLineId
         ), validatedProductCode
       ), validatedProductQuantity
+    )
+  }
+
+  private def mapAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId], validatedProductCode: ValidatedNel[Error, ProductCode], validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
+    apply(
+      apply(
+        map((OrderLine.apply _).curried, validatedOrderLineId),
+        validatedProductCode
+      ),
+      validatedProductQuantity
     )
   }
 
@@ -99,3 +104,5 @@ case class Order(orderId: OrderId, address: Address, orderLines: List[OrderLine]
 case class Address(addressLine: String)
 
 case class OrderLine(orderLineId: OrderLineId, productCode: ProductCode, quantity: ProductQuantity)
+
+case class ValidatedOrder(orderId: OrderId, address: Address, orderLines: List[OrderLine])
