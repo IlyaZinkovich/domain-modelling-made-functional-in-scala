@@ -8,7 +8,7 @@ import cats.syntax.either._
 import cats.syntax.traverse._
 import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
 
-object PlaceOrder {
+object ValidateOrder {
 
   type CheckAddressExist = UnvalidatedAddress => Either[Error, Address]
   type ValidatedOrderLinePart[T] = ValidatedNel[Error, T]
