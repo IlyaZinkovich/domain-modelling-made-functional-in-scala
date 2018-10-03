@@ -13,7 +13,7 @@ class AppTest extends FlatSpec with Matchers {
     val checkProductCodeExist: CheckProductCodeExist = (_: ProductCode) => true
     assertResult(Invalid(NonEmptyList.of(Error("Input is not a 5 chars string starting with W"),
       Error("Unable to validate quantity because of invalid product code")))) {
-      PlaceOrder.validateOrderLines(lines, checkProductCodeExist)
+      ValidateOrder.validateOrderLines(lines, checkProductCodeExist)
     }
   }
 }
