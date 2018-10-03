@@ -15,11 +15,11 @@ object PlaceOrder {
 
   def validateOrder(checkProductCodeExists: CheckProductCodeExist,
                     checkAddressExist: CheckAddressExist,
-                    unvalidatedOrder: UnvalidatedOrder): ValidatedNel[Error, ValidatedOrder] = {
+                    unvalidatedOrder: UnvalidatedOrder): ValidatedNel[Error, Order] = {
     apply(
       apply(
         apply(
-          lift((ValidatedOrder.apply _).curried), validateOrderId(unvalidatedOrder.orderId)
+          lift((Order.apply _).curried), validateOrderId(unvalidatedOrder.orderId)
         ), validateAddress(unvalidatedOrder.address, checkAddressExist)
       ), validateOrderLines(unvalidatedOrder.orderLines, checkProductCodeExists)
     )
@@ -92,17 +92,3 @@ object PlaceOrder {
     }
   }
 }
-
-case class UnvalidatedOrder(orderId: String, address: UnvalidatedAddress, orderLines: List[UnvalidatedOrderLine])
-
-case class UnvalidatedAddress(addressLine: String)
-
-case class UnvalidatedOrderLine(orderLineId: String, productCode: String, quantity: Double)
-
-case class Order(orderId: OrderId, address: Address, orderLines: List[OrderLine])
-
-case class Address(addressLine: String)
-
-case class OrderLine(orderLineId: OrderLineId, productCode: ProductCode, quantity: ProductQuantity)
-
-case class ValidatedOrder(orderId: OrderId, address: Address, orderLines: List[OrderLine])
