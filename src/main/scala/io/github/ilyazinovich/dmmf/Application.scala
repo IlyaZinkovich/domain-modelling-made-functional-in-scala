@@ -221,3 +221,10 @@ object BillingAmount {
     create(totalPrice)
   }
 }
+
+case class PricedOrderLine(orderLineId: OrderLineId, productCode: ProductCode,
+                           productQuantity: ProductQuantity, price: Price)
+
+case class PricedOrder(orderId: OrderId, address: Address,
+                       pricedOrderLines: List[PricedOrderLine],
+                       billingAmount: BillingAmount)
