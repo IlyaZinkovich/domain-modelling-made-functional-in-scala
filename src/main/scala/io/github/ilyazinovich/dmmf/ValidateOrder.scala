@@ -1,17 +1,21 @@
 package io.github.ilyazinovich.dmmf
 
-import cats.Apply
+import cats.Applicative
 import cats.data.Validated._
 import cats.data.{NonEmptyList, ValidatedNel}
 import cats.instances.list._
+import cats.syntax.applicative._
+import cats.syntax.apply._
 import cats.syntax.either._
 import cats.syntax.traverse._
 import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
 
+import scala.language.higherKinds
+
 object ValidateOrder {
 
   type CheckAddressExist = UnvalidatedAddress => Either[Error, Address]
-  type ValidatedOrderLinePart[T] = ValidatedNel[Error, T]
+  type ValidationResult[T] = ValidatedNel[Error, T]
 
   def validateOrder(checkProductCodeExists: CheckProductCodeExist,
                     checkAddressExist: CheckAddressExist,
@@ -19,7 +23,7 @@ object ValidateOrder {
     apply(
       apply(
         apply(
-          lift((Order.apply _).curried), validateOrderId(unvalidatedOrder.orderId)
+          pure((Order.apply _).curried), validateOrderId(unvalidatedOrder.orderId)
         ), validateAddress(unvalidatedOrder.address, checkAddressExist)
       ), validateOrderLines(unvalidatedOrder.orderLines, checkProductCodeExists)
     )
@@ -34,8 +38,8 @@ object ValidateOrder {
   }
 
   def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
-                         checkProductCodeExist: CheckProductCodeExist): ValidatedNel[Error, List[OrderLine]] = {
-    orderLines.traverse[ValidatedOrderLinePart, OrderLine] { orderLine =>
+                         checkProductCodeExist: CheckProductCodeExist): ValidationResult[List[OrderLine]] = {
+    orderLines.traverse[ValidationResult, OrderLine] { orderLine =>
       val validatedOrderLineId = OrderLineId.create(orderLine.orderLineId).toValidatedNel
       val validatedProductCode = ProductCode.create(orderLine.productCode, checkProductCodeExist).toValidatedNel
       val validatedProductQuantity = validatedProductCode match {
@@ -46,41 +50,40 @@ object ValidateOrder {
     }
   }
 
-  private def liftAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId], validatedProductCode: ValidatedNel[Error, ProductCode], validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
+  private def liftAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId],
+                           validatedProductCode: ValidatedNel[Error, ProductCode],
+                           validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
     apply(
       apply(
         apply(
-          lift((OrderLine.apply _).curried), validatedOrderLineId
+          pure((OrderLine.apply _).curried), validatedOrderLineId
         ), validatedProductCode
       ), validatedProductQuantity
     )
   }
 
-  private def mapAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId], validatedProductCode: ValidatedNel[Error, ProductCode], validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
-    apply(
-      apply(
-        map((OrderLine.apply _).curried, validatedOrderLineId),
-        validatedProductCode
-      ),
-      validatedProductQuantity
-    )
-  }
-
-  private def catsApplicative(validatedOrderLineId: ValidatedNel[Error, OrderLineId], validatedProductCode: ValidatedNel[Error, ProductCode], validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
-    Apply[ValidatedOrderLinePart].map3(validatedOrderLineId, validatedProductCode, validatedProductQuantity) {
+  private def catsApplicative(validatedOrderLineId: ValidationResult[OrderLineId],
+                              validatedProductCode: ValidationResult[ProductCode],
+                              validatedProductQuantity: ValidationResult[ProductQuantity]) = {
+    (validatedOrderLineId, validatedProductCode, validatedProductQuantity).mapN {
       case (orderLineId, productCode, productQuantity) => OrderLine(orderLineId, productCode, productQuantity)
     }
   }
 
-  def lift[A, B](func: A => B): ValidatedNel[Error, A => B] = {
-    Valid.apply(func)
+  private def catsLiftAndApply(validatedOrderLineId: ValidationResult[OrderLineId],
+                               validatedProductCode: ValidationResult[ProductCode],
+                               validatedProductQuantity: ValidationResult[ProductQuantity]):  ValidationResult[OrderLine] = {
+    (OrderLine.apply _).curried <&> validatedOrderLineId <*> validatedProductCode <*> validatedProductQuantity
   }
 
-  def map[A, B](func: A => B, value: ValidatedNel[Error, A]): ValidatedNel[Error, B] = {
-    value match {
-      case Valid(result) => Valid(func.apply(result))
-      case Invalid(errors) => Invalid(errors)
+  implicit class ApplicativeMap[A , B](function: A => B) {
+    def <&>[T[_]: Applicative](applicative: T[A]): T[B] = {
+      function.pure[T] <*> applicative
     }
+  }
+
+  def pure[A, B](func: A => B): ValidatedNel[Error, A => B] = {
+    Valid.apply(func)
   }
 
   def apply[A, B](func: ValidatedNel[Error, A => B], value: ValidatedNel[Error, A]): ValidatedNel[Error, B] = {
