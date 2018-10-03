@@ -94,6 +94,18 @@ object OrderLineId {
   }
 }
 
+case class UnvalidatedAddress(addressLine: String)
+
+case class Address(addressLine: String)
+
+case class UnvalidatedOrderLine(orderLineId: String, productCode: String, quantity: Double)
+
+case class OrderLine(orderLineId: OrderLineId, productCode: ProductCode, quantity: ProductQuantity)
+
+case class UnvalidatedOrder(orderId: String, address: UnvalidatedAddress, orderLines: List[UnvalidatedOrderLine])
+
+case class Order(orderId: OrderId, address: Address, orderLines: List[OrderLine])
+
 object WidgetCode {
 
   private def apply(string: String): WidgetCode = new WidgetCode(string)
