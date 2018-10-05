@@ -24,7 +24,7 @@ object ValidateOrder {
       apply(
         apply(
           pure((Order.apply _).curried), validateOrderId(unvalidatedOrder.orderId)
-        ), validateAddress(unvalidatedOrder.address, checkAddressExist)
+        ), validateCustomerInformation(unvalidatedOrder.customerInformation, checkAddressExist)
       ), validateOrderLines(unvalidatedOrder.orderLines, checkProductCodeExists)
     )
   }
@@ -33,8 +33,11 @@ object ValidateOrder {
     OrderId.create(orderId).toValidatedNel
   }
 
-  def validateAddress(address: UnvalidatedAddress, checkAddressExist: CheckAddressExist): ValidatedNel[Error, Address] = {
-    checkAddressExist(address).toValidatedNel
+  def validateCustomerInformation(customerInformation: UnvalidatedCustomerInformation,
+                                  checkAddressExist: CheckAddressExist): ValidatedNel[Error, CustomerInformation] = {
+    val addressValidationResult: ValidatedNel[Error, Address] = checkAddressExist(customerInformation.address).toValidatedNel
+    val emailValidationResult: ValidatedNel[Error, EmailAddress] = EmailAddress.create(customerInformation.emailAddress).toValidatedNel
+    apply(apply(pure((CustomerInformation.apply _).curried), addressValidationResult), emailValidationResult)
   }
 
   def validateOrderLines(orderLines: List[UnvalidatedOrderLine],

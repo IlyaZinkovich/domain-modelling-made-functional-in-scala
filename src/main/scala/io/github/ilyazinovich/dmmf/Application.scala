@@ -102,9 +102,12 @@ case class UnvalidatedOrderLine(orderLineId: String, productCode: String, quanti
 
 case class OrderLine(orderLineId: OrderLineId, productCode: ProductCode, quantity: ProductQuantity)
 
-case class UnvalidatedOrder(orderId: String, address: UnvalidatedAddress, orderLines: List[UnvalidatedOrderLine])
+case class UnvalidatedCustomerInformation(emailAddress: String, address: UnvalidatedAddress)
 
-case class Order(orderId: OrderId, address: Address, orderLines: List[OrderLine])
+case class UnvalidatedOrder(orderId: String, customerInformation: UnvalidatedCustomerInformation,
+                            orderLines: List[UnvalidatedOrderLine])
+
+case class Order(orderId: OrderId, customerInformation: CustomerInformation, orderLines: List[OrderLine])
 
 object WidgetCode {
 
@@ -225,6 +228,10 @@ object BillingAmount {
 case class PricedOrderLine(orderLineId: OrderLineId, productCode: ProductCode,
                            productQuantity: ProductQuantity, price: Price)
 
-case class PricedOrder(orderId: OrderId, address: Address,
+case class PricedOrder(orderId: OrderId,
+                       customerInformation: CustomerInformation,
                        pricedOrderLines: List[PricedOrderLine],
                        billingAmount: BillingAmount)
+
+case class CustomerInformation(address: Address, emailAddress: EmailAddress)
+
