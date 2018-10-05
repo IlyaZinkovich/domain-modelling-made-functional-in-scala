@@ -235,3 +235,16 @@ case class PricedOrder(orderId: OrderId,
 
 case class CustomerInformation(address: Address, emailAddress: EmailAddress)
 
+sealed trait AcknowledgementStatus
+
+case object Sent extends AcknowledgementStatus
+
+case object NotSent extends AcknowledgementStatus
+
+case class AcknowledgementLetter(content: String)
+
+case class Acknowledgement(emailAddress: EmailAddress, content: AcknowledgementLetter)
+
+case class AcknowledgementSent(orderId: OrderId, emailAddress: EmailAddress)
+
+
