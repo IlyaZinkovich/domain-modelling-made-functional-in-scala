@@ -1,6 +1,6 @@
 package io.github.ilyazinovich.dmmf
 
-class AcknowledgeOrder {
+object AcknowledgeOrder {
 
   type CreateAcknowledgementLetter = PricedOrder => AcknowledgementLetter
   type SendAcknowledgement = Acknowledgement => AcknowledgementStatus
