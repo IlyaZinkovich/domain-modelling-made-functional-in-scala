@@ -12,7 +12,7 @@ object PriceOrder {
       BillingAmount.total(prices) match {
         case Left(error) => Left(NonEmptyList.of(error))
         case Right(billingAmount) =>
-          Right(PricedOrder(order.orderId, order.address, pricedOrderLines, billingAmount))
+          Right(PricedOrder(order.orderId, order.customerInformation, pricedOrderLines, billingAmount))
       }
     }
   }

@@ -27,7 +27,8 @@ class AppTest extends FlatSpec with Matchers {
   private def createOrder() = {
     val errorOrOrder = for {
       orderId <- OrderId.create("1").right
-    } yield Order(orderId, Address("Kemperplatz 1"), List(createOrderLine()))
+      emailAddress <- EmailAddress.create("ilya@github.io").right
+    } yield Order(orderId, CustomerInformation(Address("Kemperplatz 1"), emailAddress), List(createOrderLine()))
     errorOrOrder.getOrElse(throw new RuntimeException)
   }
 
