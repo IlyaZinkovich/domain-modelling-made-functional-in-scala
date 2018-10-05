@@ -7,15 +7,22 @@ class AcknowledgeOrder {
 
   def acknowledgeOrder(createAcknowledgementLetter: CreateAcknowledgementLetter,
                        sendAcknowledgement: SendAcknowledgement,
-                       pricedOrder: PricedOrder) = {
+                       pricedOrder: PricedOrder): Option[AcknowledgementSent] = {
     val acknowledgementLetter = createAcknowledgementLetter(pricedOrder)
-    Acknowledgement(pricedOrder.customerInformation.emailAddress, acknowledgementLetter)
+    val customerEmailAddress = pricedOrder.customerInformation.emailAddress
+    val acknowledgement = Acknowledgement(customerEmailAddress, acknowledgementLetter)
+    sendAcknowledgement(acknowledgement) match {
+      case Sent => Some(AcknowledgementSent(pricedOrder.orderId, customerEmailAddress))
+      case NotSent => None
+    }
   }
 }
 
 sealed trait AcknowledgementStatus
-case class Sent() extends AcknowledgementStatus
-case class NotSent() extends AcknowledgementStatus
+case object Sent extends AcknowledgementStatus
+case object NotSent extends AcknowledgementStatus
 
 case class AcknowledgementLetter(content: String)
 case class Acknowledgement(emailAddress: EmailAddress, content: AcknowledgementLetter)
+
+case class AcknowledgementSent(orderId: OrderId, emailAddress: EmailAddress)
