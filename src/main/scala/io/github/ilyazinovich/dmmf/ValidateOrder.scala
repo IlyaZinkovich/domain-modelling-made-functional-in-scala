@@ -46,11 +46,11 @@ object ValidateOrder {
         case Valid(productCode) => ProductQuantity.create(productCode, orderLine.quantity).toValidatedNel
         case Invalid(_) => Invalid(NonEmptyList.of(Error("Unable to validate quantity because of invalid product code")))
       }
-      liftAndApply(validatedOrderLineId, validatedProductCode, validatedProductQuantity)
+      pureAndApply(validatedOrderLineId, validatedProductCode, validatedProductQuantity)
     }
   }
 
-  private def liftAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId],
+  private def pureAndApply(validatedOrderLineId: ValidatedNel[Error, OrderLineId],
                            validatedProductCode: ValidatedNel[Error, ProductCode],
                            validatedProductQuantity: ValidatedNel[Error, ProductQuantity]) = {
     apply(
@@ -70,7 +70,7 @@ object ValidateOrder {
     }
   }
 
-  private def catsLiftAndApply(validatedOrderLineId: ValidationResult[OrderLineId],
+  private def catsPureAndApply(validatedOrderLineId: ValidationResult[OrderLineId],
                                validatedProductCode: ValidationResult[ProductCode],
                                validatedProductQuantity: ValidationResult[ProductQuantity]):  ValidationResult[OrderLine] = {
     (OrderLine.apply _).curried <&> validatedOrderLineId <*> validatedProductCode <*> validatedProductQuantity
