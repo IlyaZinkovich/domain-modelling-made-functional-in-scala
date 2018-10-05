@@ -29,18 +29,18 @@ object ValidateOrder {
     )
   }
 
-  def validateOrderId(orderId: String): ValidatedNel[Error, OrderId] = {
+  private def validateOrderId(orderId: String): ValidatedNel[Error, OrderId] = {
     OrderId.create(orderId).toValidatedNel
   }
 
-  def validateCustomerInformation(customerInformation: UnvalidatedCustomerInformation,
+  private def validateCustomerInformation(customerInformation: UnvalidatedCustomerInformation,
                                   checkAddressExist: CheckAddressExist): ValidatedNel[Error, CustomerInformation] = {
     val addressValidationResult: ValidatedNel[Error, Address] = checkAddressExist(customerInformation.address).toValidatedNel
     val emailValidationResult: ValidatedNel[Error, EmailAddress] = EmailAddress.create(customerInformation.emailAddress).toValidatedNel
     apply(apply(pure((CustomerInformation.apply _).curried), addressValidationResult), emailValidationResult)
   }
 
-  def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
+  private def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
                          checkProductCodeExist: CheckProductCodeExist): ValidationResult[List[OrderLine]] = {
     orderLines.traverse[ValidationResult, OrderLine] { orderLine =>
       val validatedOrderLineId = OrderLineId.create(orderLine.orderLineId).toValidatedNel
@@ -79,17 +79,17 @@ object ValidateOrder {
     (OrderLine.apply _).curried <&> validatedOrderLineId <*> validatedProductCode <*> validatedProductQuantity
   }
 
-  implicit class ApplicativeMap[A , B](function: A => B) {
+  private implicit class ApplicativeMap[A , B](function: A => B) {
     def <&>[T[_]: Applicative](applicative: T[A]): T[B] = {
       function.pure[T] <*> applicative
     }
   }
 
-  def pure[A, B](func: A => B): ValidatedNel[Error, A => B] = {
+  private def pure[A, B](func: A => B): ValidatedNel[Error, A => B] = {
     Valid.apply(func)
   }
 
-  def apply[A, B](func: ValidatedNel[Error, A => B], value: ValidatedNel[Error, A]): ValidatedNel[Error, B] = {
+  private def apply[A, B](func: ValidatedNel[Error, A => B], value: ValidatedNel[Error, A]): ValidatedNel[Error, B] = {
     (func, value) match {
       case (Valid(validFunc), Valid(valueResult)) => Valid(validFunc.apply(valueResult))
       case (Valid(_), Invalid(valueErrors)) => Invalid(valueErrors)
