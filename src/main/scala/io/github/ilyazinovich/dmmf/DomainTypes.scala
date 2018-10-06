@@ -245,6 +245,11 @@ case class AcknowledgementLetter(content: String)
 
 case class Acknowledgement(emailAddress: EmailAddress, content: AcknowledgementLetter)
 
-case class AcknowledgementSent(orderId: OrderId, emailAddress: EmailAddress)
+sealed trait PlaceOrderEvent
 
+case class OrderPlaced(placedOrder: PricedOrder) extends PlaceOrderEvent
 
+case class BillableOrderPlaced(orderId: OrderId, billingAddress: Address,
+                               amountToBill: BillingAmount) extends PlaceOrderEvent
+
+case class AcknowledgementSent(orderId: OrderId, emailAddress: EmailAddress) extends PlaceOrderEvent

@@ -40,7 +40,7 @@ object ValidateOrder {
     apply(apply(pure((CustomerInformation.apply _).curried), addressValidationResult), emailValidationResult)
   }
 
-  private def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
+  def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
                          checkProductCodeExist: CheckProductCodeExist): ValidationResult[List[OrderLine]] = {
     orderLines.traverse[ValidationResult, OrderLine] { orderLine =>
       val validatedOrderLineId = OrderLineId.create(orderLine.orderLineId).toValidatedNel

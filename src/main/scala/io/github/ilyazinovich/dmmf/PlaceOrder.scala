@@ -1,6 +1,6 @@
 package io.github.ilyazinovich.dmmf
 
-import cats.data.ValidatedNel
+import cats.data.{NonEmptyList, ValidatedNel}
 import io.github.ilyazinovich.dmmf.AcknowledgeOrder.{CreateAcknowledgementLetter, SendAcknowledgement, acknowledgeOrder}
 import io.github.ilyazinovich.dmmf.PriceOrder.{GetProductPrice, priceOrder}
 import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
@@ -13,13 +13,19 @@ object PlaceOrder {
                  unvalidatedOrder: UnvalidatedOrder,
                  getProductPrice: GetProductPrice,
                  createAcknowledgementLetter: CreateAcknowledgementLetter,
-                 sendAcknowledgement: SendAcknowledgement) = {
+                 sendAcknowledgement: SendAcknowledgement): Either[NonEmptyList[Error], List[PlaceOrderEvent]] = {
     val orderValidationResult: ValidatedNel[Error, Order] =
       validateOrder(checkProductCodeExist, checkAddressExist, unvalidatedOrder)
     for {
       order <- orderValidationResult.toEither.right
       pricedOrder <- priceOrder(order, getProductPrice).right
-      acknowledgment <- acknowledgeOrder(createAcknowledgementLetter, sendAcknowledgement, pricedOrder)
-    } yield acknowledgment
+    } yield createEvents(acknowledgeOrder(createAcknowledgementLetter, sendAcknowledgement, pricedOrder), pricedOrder)
+  }
+
+  def createEvents(optionalAcknowledgementSetEvent: Option[AcknowledgementSent],
+                   pricedOrder: PricedOrder): List[PlaceOrderEvent] = {
+    optionalAcknowledgementSetEvent.toList ++
+      List(BillableOrderPlaced(pricedOrder.orderId, pricedOrder.customerInformation.address, pricedOrder.billingAmount)) ++
+      List(OrderPlaced(pricedOrder))
   }
 }
