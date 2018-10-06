@@ -94,18 +94,9 @@ object OrderLineId {
   }
 }
 
-case class UnvalidatedAddress(addressLine: String)
-
 case class Address(addressLine: String)
 
-case class UnvalidatedOrderLine(orderLineId: String, productCode: String, quantity: Double)
-
 case class OrderLine(orderLineId: OrderLineId, productCode: ProductCode, quantity: ProductQuantity)
-
-case class UnvalidatedCustomerInformation(emailAddress: String, address: UnvalidatedAddress)
-
-case class UnvalidatedOrder(orderId: String, customerInformation: UnvalidatedCustomerInformation,
-                            orderLines: List[UnvalidatedOrderLine])
 
 case class Order(orderId: OrderId, customerInformation: CustomerInformation, orderLines: List[OrderLine])
 
@@ -234,6 +225,15 @@ case class PricedOrder(orderId: OrderId,
                        billingAmount: BillingAmount)
 
 case class CustomerInformation(address: Address, emailAddress: EmailAddress)
+
+case class UnvalidatedAddress(addressLine: String)
+
+case class UnvalidatedOrderLine(orderLineId: String, productCode: String, quantity: Double)
+
+case class UnvalidatedCustomerInformation(emailAddress: String, address: UnvalidatedAddress)
+
+case class UnvalidatedOrder(orderId: String, customerInformation: UnvalidatedCustomerInformation,
+                            orderLines: List[UnvalidatedOrderLine])
 
 sealed trait AcknowledgementStatus
 
