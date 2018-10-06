@@ -2,7 +2,11 @@ package io.github.ilyazinovich.dmmf
 
 import cats.data.NonEmptyList
 import cats.data.Validated.Invalid
+import io.github.ilyazinovich.dmmf.AcknowledgeOrder.{CreateAcknowledgementLetter, SendAcknowledgement}
+import io.github.ilyazinovich.dmmf.PlaceOrder.placeOrder
+import io.github.ilyazinovich.dmmf.PriceOrder.GetProductPrice
 import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
+import io.github.ilyazinovich.dmmf.ValidateOrder.CheckAddressExist
 import org.scalatest.{FlatSpec, Matchers}
 
 class AppTest extends FlatSpec with Matchers {
@@ -21,7 +25,34 @@ class AppTest extends FlatSpec with Matchers {
     val order = createOrder()
     val result = PriceOrder.priceOrder(order, _ => Price.create(10.0).getOrElse(throw new RuntimeException))
     val pricedOrder = result.getOrElse(throw new RuntimeException)
-    assertResult(BillingAmount.create(100.0).getOrElse(throw new RuntimeException))(pricedOrder.billingAmount)
+    assert(BillingAmount.create(100.0).getOrElse(throw new RuntimeException) == pricedOrder.billingAmount)
+  }
+
+  "PlaceOrder" should "should produce all 3 events" in {
+    val unvalidatedEmailAddress = "ilya@github.io"
+    val address = UnvalidatedAddress("Kemperplatz 1")
+    val customerInformation =
+      UnvalidatedCustomerInformation(unvalidatedEmailAddress, address)
+    val orderLine1 = UnvalidatedOrderLine("12345", "W1234", 2.0)
+    val orderLine2 = UnvalidatedOrderLine("12346", "G1234", 10.0)
+    val unvalidatedOrderId = "1"
+    val unvalidatedOrder =
+      UnvalidatedOrder(unvalidatedOrderId, customerInformation, List(orderLine1, orderLine2))
+    val checkProductCodeExist: CheckProductCodeExist = _ => true
+    val checkAddressExist: CheckAddressExist =
+      unvalidatedAddress => Right(Address(unvalidatedAddress.addressLine))
+    val getProductPrice: GetProductPrice =
+      _ => Price.create(10).getOrElse(throw new RuntimeException)
+    val acknowledgementLetter = AcknowledgementLetter("bla")
+    val createAcknowledgementLetter: CreateAcknowledgementLetter = _ => acknowledgementLetter
+    val sendAcknowledgement: SendAcknowledgement = _ => Sent
+    val placeOrderEvents: Either[NonEmptyList[Error], List[PlaceOrderEvent]] = placeOrder(checkProductCodeExist, checkAddressExist, unvalidatedOrder,
+      getProductPrice, createAcknowledgementLetter, sendAcknowledgement)
+    placeOrderEvents match {
+      case Right(List(billableOrderPlaced: BillableOrderPlaced, orderPlaced: OrderPlaced, acknowledgementSent: AcknowledgementSent)) => {
+        assert(billableOrderPlaced.amountToBill.double == 120.0)
+      }
+    }
   }
 
   private def createOrder() = {
