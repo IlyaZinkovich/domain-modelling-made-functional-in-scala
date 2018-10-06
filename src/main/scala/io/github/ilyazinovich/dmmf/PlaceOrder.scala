@@ -24,8 +24,9 @@ object PlaceOrder {
 
   def createEvents(optionalAcknowledgementSetEvent: Option[AcknowledgementSent],
                    pricedOrder: PricedOrder): List[PlaceOrderEvent] = {
-    optionalAcknowledgementSetEvent.toList ++
-      List(BillableOrderPlaced(pricedOrder.orderId, pricedOrder.customerInformation.address, pricedOrder.billingAmount)) ++
-      List(OrderPlaced(pricedOrder))
+    val billableOrderPlaced = BillableOrderPlaced(pricedOrder.orderId,
+      pricedOrder.customerInformation.address, pricedOrder.billingAmount)
+    val orderPlaced = OrderPlaced(pricedOrder)
+    billableOrderPlaced :: orderPlaced :: optionalAcknowledgementSetEvent.toList
   }
 }
