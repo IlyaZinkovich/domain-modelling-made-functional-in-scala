@@ -57,9 +57,13 @@ object EmailAddress {
 
 object ZipCode {
 
+  private val ZipCodePattern = "(\\d{5})".r
+
   def create(string: String): Either[Error, ZipCode] = {
-    if (string.matches("\\d{5}")) Right(new ZipCode(string))
-    else Left(Error("Input is not 5-digit string"))
+    string match {
+      case ZipCodePattern(zipCodeString) => Right(new ZipCode(zipCodeString))
+      case _ => Left(Error("Input is not 5-digit string"))
+    }
   }
 
   private def apply(string: String): ZipCode = new ZipCode(string)
@@ -103,9 +107,13 @@ case class Order(orderId: OrderId, customerInformation: CustomerInformation, ord
 
 object WidgetCode {
 
+  private val WidgetCodePattern = "(W\\d{4})".r
+
   def create(string: String): Either[Error, WidgetCode] = {
-    if (string.matches("W\\d{4}")) Right(new WidgetCode(string))
-    else Left(Error("Input is not a 5 chars string starting with W"))
+    string match {
+      case WidgetCodePattern(widgetCodeString) => Right(new WidgetCode(widgetCodeString))
+      case _ => Left(Error("Input is not a 5 chars string starting with W"))
+    }
   }
 
   private def apply(string: String): WidgetCode = new WidgetCode(string)
@@ -113,9 +121,13 @@ object WidgetCode {
 
 object GadgetCode {
 
+  private val GadgetCodePattern = "(G\\d{4})".r
+
   def create(string: String): Either[Error, GadgetCode] = {
-    if (string.matches("G\\d{4}")) Right(new GadgetCode(string))
-    else Left(Error("Input is not a 5 chars string starting with G"))
+    string match {
+      case GadgetCodePattern(gadgetCodeString) => Right(new GadgetCode(gadgetCodeString))
+      case _ => Left(Error("Input is not a 5 chars string starting with G"))
+    }
   }
 
   private def apply(string: String): GadgetCode = new GadgetCode(string)
