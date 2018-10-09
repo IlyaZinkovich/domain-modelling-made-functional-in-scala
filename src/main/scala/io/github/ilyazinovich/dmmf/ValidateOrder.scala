@@ -37,6 +37,19 @@ object ValidateOrder {
     apply(apply(pure((CustomerInformation.apply _).curried), addressValidationResult), emailValidationResult)
   }
 
+  private def pure[A, B](func: A => B): ValidatedNel[Error, A => B] = {
+    Valid.apply(func)
+  }
+
+  private def apply[A, B](func: ValidatedNel[Error, A => B], value: ValidatedNel[Error, A]): ValidatedNel[Error, B] = {
+    (func, value) match {
+      case (Valid(validFunc), Valid(valueResult)) => Valid(validFunc.apply(valueResult))
+      case (Valid(_), Invalid(valueErrors)) => Invalid(valueErrors)
+      case (Invalid(funcErrors), Valid(_)) => Invalid(funcErrors)
+      case (Invalid(funcErrors), Invalid(valueErrors)) => Invalid(funcErrors.concatNel(valueErrors))
+    }
+  }
+
   def validateOrderLines(orderLines: List[UnvalidatedOrderLine],
                          checkProductCodeExist: CheckProductCodeExist): ValidationResult[List[OrderLine]] = {
     orderLines.traverse[ValidationResult, OrderLine] { orderLine =>
@@ -56,6 +69,12 @@ object ValidateOrder {
     apply(apply(apply(pure((OrderLine.apply _).curried), orderLineId), productCode), productQuantity)
   }
 
+  private implicit class ApplicativeMap[A, B](function: A => B) {
+    def <&>[T[_] : Applicative](applicative: T[A]): T[B] = {
+      function.pure[T] <*> applicative
+    }
+  }
+
   private def catsApplicative(validatedOrderLineId: ValidationResult[OrderLineId],
                               validatedProductCode: ValidationResult[ProductCode],
                               validatedProductQuantity: ValidationResult[ProductQuantity]) = {
@@ -68,24 +87,5 @@ object ValidateOrder {
                                validatedProductCode: ValidationResult[ProductCode],
                                validatedProductQuantity: ValidationResult[ProductQuantity]): ValidationResult[OrderLine] = {
     (OrderLine.apply _).curried <&> validatedOrderLineId <*> validatedProductCode <*> validatedProductQuantity
-  }
-
-  private implicit class ApplicativeMap[A, B](function: A => B) {
-    def <&>[T[_] : Applicative](applicative: T[A]): T[B] = {
-      function.pure[T] <*> applicative
-    }
-  }
-
-  private def pure[A, B](func: A => B): ValidatedNel[Error, A => B] = {
-    Valid.apply(func)
-  }
-
-  private def apply[A, B](func: ValidatedNel[Error, A => B], value: ValidatedNel[Error, A]): ValidatedNel[Error, B] = {
-    (func, value) match {
-      case (Valid(validFunc), Valid(valueResult)) => Valid(validFunc.apply(valueResult))
-      case (Valid(_), Invalid(valueErrors)) => Invalid(valueErrors)
-      case (Invalid(funcErrors), Valid(_)) => Invalid(funcErrors)
-      case (Invalid(funcErrors), Invalid(valueErrors)) => Invalid(funcErrors.concatNel(valueErrors))
-    }
   }
 }

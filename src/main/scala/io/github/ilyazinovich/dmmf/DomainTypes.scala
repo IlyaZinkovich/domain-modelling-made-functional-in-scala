@@ -32,17 +32,15 @@ case class PdfAttachment(name: String, bytes: Array[Byte])
 
 object String50 {
 
-  private def apply(string: String) = new String50(string)
-
   def create(string: String): Either[Error, String50] = {
     if (string.length <= 50) Right(new String50(string))
     else Left(Error("String is longer than 50 characters"))
   }
+
+  private def apply(string: String) = new String50(string)
 }
 
 object EmailAddress {
-
-  private def apply(string: String): EmailAddress = new EmailAddress(string)
 
   private val EmailPattern = "(.*@.*)".r
 
@@ -50,24 +48,24 @@ object EmailAddress {
     string match {
       case "" => Left(Error("Email cannot be empty"))
       case EmailPattern(email) => Right(new EmailAddress(email))
-      case _  => Left(Error("String does not match email pattern"))
+      case _ => Left(Error("String does not match email pattern"))
     }
   }
+
+  private def apply(string: String): EmailAddress = new EmailAddress(string)
 }
 
 object ZipCode {
-
-  private def apply(string: String): ZipCode = new ZipCode(string)
 
   def create(string: String): Either[Error, ZipCode] = {
     if (string.matches("\\d{5}")) Right(new ZipCode(string))
     else Left(Error("Input is not 5-digit string"))
   }
+
+  private def apply(string: String): ZipCode = new ZipCode(string)
 }
 
 object OrderId {
-
-  private def apply(string: String): OrderId = new OrderId(string)
 
   def create(string: String): Either[Error, OrderId] = {
     if (string.isEmpty) {
@@ -78,11 +76,11 @@ object OrderId {
       Right(new OrderId(string))
     }
   }
+
+  private def apply(string: String): OrderId = new OrderId(string)
 }
 
 object OrderLineId {
-
-  private def apply(string: String): OrderLineId = new OrderLineId(string)
 
   def create(string: String): Either[Error, OrderLineId] = {
     if (string.isEmpty) {
@@ -93,6 +91,8 @@ object OrderLineId {
       Right(new OrderLineId(string))
     }
   }
+
+  private def apply(string: String): OrderLineId = new OrderLineId(string)
 }
 
 case class Address(addressLine: String)
@@ -103,22 +103,22 @@ case class Order(orderId: OrderId, customerInformation: CustomerInformation, ord
 
 object WidgetCode {
 
-  private def apply(string: String): WidgetCode = new WidgetCode(string)
-
   def create(string: String): Either[Error, WidgetCode] = {
     if (string.matches("W\\d{4}")) Right(new WidgetCode(string))
     else Left(Error("Input is not a 5 chars string starting with W"))
   }
+
+  private def apply(string: String): WidgetCode = new WidgetCode(string)
 }
 
 object GadgetCode {
-
-  private def apply(string: String): GadgetCode = new GadgetCode(string)
 
   def create(string: String): Either[Error, GadgetCode] = {
     if (string.matches("G\\d{4}")) Right(new GadgetCode(string))
     else Left(Error("Input is not a 5 chars string starting with G"))
   }
+
+  private def apply(string: String): GadgetCode = new GadgetCode(string)
 }
 
 object ProductCode {
@@ -139,24 +139,24 @@ object ProductCode {
 
 object UnitQuantity {
 
-  private def apply(integer: Int): UnitQuantity = new UnitQuantity(integer)
-
   def create(integer: Int): Either[Error, UnitQuantity] = {
     if (integer < 1) Left(Error("Input integer is less than 1"))
     else if (integer > 1000) Left(Error("Input integer is more than 1000"))
     else Right(new UnitQuantity(integer))
   }
+
+  private def apply(integer: Int): UnitQuantity = new UnitQuantity(integer)
 }
 
 object KilogramQuantity {
-
-  private def apply(double: Double): KilogramQuantity = new KilogramQuantity(double)
 
   def create(double: Double): Either[Error, KilogramQuantity] = {
     if (double < 0.05D) Left(Error("Input double is less than 0.05"))
     else if (double > 100.00D) Left(Error("Input double is more than 100.00"))
     else Right(new KilogramQuantity(double))
   }
+
+  private def apply(double: Double): KilogramQuantity = new KilogramQuantity(double)
 }
 
 object ProductQuantity {
@@ -183,7 +183,10 @@ object Price {
     case Price(value) => value
   }
 
-  private def apply(double: Double): Price = new Price(double)
+  def multiply(price: Price, quantity: ProductQuantity): Either[Error, Price] = {
+    val decimalQuantity = ProductQuantity.decimalQuantity(quantity)
+    Price.create(decimalQuantity * price.double)
+  }
 
   def create(double: Double): Either[Error, Price] = {
     if (double < 0.0D) Left(Error(s"Price cannot be less than 0.0"))
@@ -191,15 +194,15 @@ object Price {
     else Right(new Price(double))
   }
 
-  def multiply(price: Price, quantity: ProductQuantity): Either[Error, Price] = {
-    val decimalQuantity = ProductQuantity.decimalQuantity(quantity)
-    Price.create(decimalQuantity * price.double)
-  }
+  private def apply(double: Double): Price = new Price(double)
 }
 
 object BillingAmount {
 
-  private def apply(double: Double): BillingAmount = new BillingAmount(double)
+  def total(prices: List[Price]): Either[Error, BillingAmount] = {
+    val totalPrice = prices.map(Price.value).sum
+    create(totalPrice)
+  }
 
   def create(double: Double): Either[Error, BillingAmount] = {
     if (double < 0.0D) Left(Error(s"Billing amount cannot be less than 0.0"))
@@ -207,10 +210,7 @@ object BillingAmount {
     else Right(new BillingAmount(double))
   }
 
-  def total(prices: List[Price]): Either[Error, BillingAmount] = {
-    val totalPrice = prices.map(Price.value).sum
-    create(totalPrice)
-  }
+  private def apply(double: Double): BillingAmount = new BillingAmount(double)
 }
 
 case class PricedOrderLine(orderLineId: OrderLineId, productCode: ProductCode,
