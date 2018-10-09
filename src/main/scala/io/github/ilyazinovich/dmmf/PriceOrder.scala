@@ -1,10 +1,8 @@
 package io.github.ilyazinovich.dmmf
 
 import cats.data.NonEmptyList
-import cats.syntax.semigroup._
-import cats.syntax.either._
-import cats.instances.either._
 import cats.instances.list._
+import cats.syntax.either._
 
 object PriceOrder {
 
