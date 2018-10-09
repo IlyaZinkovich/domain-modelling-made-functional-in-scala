@@ -44,12 +44,13 @@ object EmailAddress {
 
   private def apply(string: String): EmailAddress = new EmailAddress(string)
 
+  private val EmailPattern = "(.*@.*)".r
+
   def create(string: String): Either[Error, EmailAddress] = {
     string match {
       case "" => Left(Error("Email cannot be empty"))
-      case nonEmptyString =>
-        if (nonEmptyString.matches(".*@.*")) Right(new EmailAddress(nonEmptyString))
-        else Left(Error("String does not match email pattern"))
+      case EmailPattern(email) => Right(new EmailAddress(email))
+      case _  => Left(Error("String does not match email pattern"))
     }
   }
 }
@@ -125,12 +126,8 @@ object ProductCode {
   type CheckProductCodeExist = ProductCode => Boolean
 
   def create(string: String, checkProductCodeExist: CheckProductCodeExist): Either[Error, ProductCode] = {
-    createWithoutVerifyingExistence(string) match {
-      case Right(productCode) =>
-        if (checkProductCodeExist(productCode)) Right(productCode)
-        else Left(Error(s"Product code does not exist: $string"))
-      case Left(error) => Left(error)
-    }
+    createWithoutVerifyingExistence(string)
+      .filterOrElse(checkProductCodeExist, Error(s"Product code does not exist: $string"))
   }
 
   private def createWithoutVerifyingExistence(string: String): Either[Error, ProductCode] = {
