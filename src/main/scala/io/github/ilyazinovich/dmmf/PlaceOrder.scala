@@ -17,8 +17,8 @@ object PlaceOrder {
     val orderValidationResult: ValidatedNel[Error, Order] =
       validateOrder(checkProductCodeExist, checkAddressExist, unvalidatedOrder)
     for {
-      order <- orderValidationResult.toEither.right
-      pricedOrder <- priceOrder(order, getProductPrice).right
+      order <- orderValidationResult.toEither
+      pricedOrder <- priceOrder(order, getProductPrice)
     } yield createEvents(acknowledgeOrder(createAcknowledgementLetter, sendAcknowledgement, pricedOrder), pricedOrder)
   }
 
