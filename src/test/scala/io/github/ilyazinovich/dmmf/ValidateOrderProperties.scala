@@ -1,5 +1,6 @@
 package io.github.ilyazinovich.dmmf
 
+import cats.data.Validated.Valid
 import io.github.ilyazinovich.dmmf.ProductCode.CheckProductCodeExist
 import io.github.ilyazinovich.dmmf.ValidateOrder.CheckAddressExist
 import org.scalacheck.Prop.forAll
@@ -52,8 +53,8 @@ class ValidateOrderProperties extends PropSpec with Checkers {
   property("validate") {
     check(forAll(genUnvalidatedOrder, genCheckProductCodeExist, genCheckAddressExist) {
       (unvalidatedOrder, checkProductCodeExist, checkAddressExist) =>
-        ValidateOrder.validateOrder(checkProductCodeExist, checkAddressExist, unvalidatedOrder).toEither match {
-          case Right(Order(OrderId(orderId), CustomerInformation(address, emailAddress), orderLines)) => {
+        ValidateOrder.validateOrder(checkProductCodeExist, checkAddressExist, unvalidatedOrder) match {
+          case Valid(Order(OrderId(orderId), CustomerInformation(address, emailAddress), orderLines)) => {
             unvalidatedOrder.orderId == orderId
           }
           case _ => false
