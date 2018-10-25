@@ -1,6 +1,6 @@
 package io.github.ilyazinovich.dmmf
 
-import cats.data.Validated.{Invalid, Valid}
+import cats.data.Validated.Valid
 import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
 import org.scalatest.PropSpec
@@ -10,28 +10,40 @@ class ValidateOrderProperties extends PropSpec with Checkers {
 
   private val genAddress: Gen[UnvalidatedAddress] = Gen.alphaNumStr.map(UnvalidatedAddress)
 
+  private val genEmailAddress: Gen[String] = for {
+    prefix <- Gen.alphaNumStr
+    suffix <- Gen.alphaNumStr
+  } yield prefix + "@" + suffix
+
   private val genCustomerInformation: Gen[UnvalidatedCustomerInformation] = for {
-    emailAddress <- for (a <- Gen.alphaNumStr; b <- Gen.alphaNumStr) yield a + "@" + b
+    emailAddress <- genEmailAddress
     address <- genAddress
   } yield UnvalidatedCustomerInformation(emailAddress, address)
 
+  private def genString(charGenerator: Gen[Char], length: Int): Gen[String] =
+    Gen.listOfN(length, charGenerator).map(_.mkString)
+
+  private def genAlphaNumericString(length: Int): Gen[String] = genString(Gen.alphaNumChar, length)
+
+  private def genNumericString(length: Int): Gen[String] = genString(Gen.numChar, length)
+
   private val genWidget: Gen[(String, Double)] = for {
-    code <- numStrGen(4).map("W" + _)
-    q <- Gen.choose(1, 1000)
-  } yield (code, q)
+    widgetCode <- genNumericString(4).map("W" + _)
+    widgetQuantity <- Gen.chooseNum(1, 1000)
+  } yield (widgetCode, widgetQuantity)
 
   private val genGadget: Gen[(String, Double)] = for {
-    code <- numStrGen(4).map("G" + _)
-    q <- Gen.choose(0.05, 100.0)
-  } yield (code, q)
+    gadgetCode <- genNumericString(4).map("G" + _)
+    gadgetQuantity <- Gen.choose(0.05, 100.0)
+  } yield (gadgetCode, gadgetQuantity)
 
   private val genOrderLine = for {
-    orderLineId <- strGen(50)
+    orderLineId <- genAlphaNumericString(50)
     (productCode, quantity) <- Gen.oneOf(genWidget, genGadget)
   } yield UnvalidatedOrderLine(orderLineId, productCode, quantity)
 
-  private val genUnvalidatedOrder: Gen[UnvalidatedOrder] = for {
-    orderId <- strGen(50)
+  private val genValidUnvalidatedOrder: Gen[UnvalidatedOrder] = for {
+    orderId <- genAlphaNumericString(50)
     customerInformation <- genCustomerInformation
     orderLines <- Gen.listOf(genOrderLine)
   } yield UnvalidatedOrder(orderId, customerInformation, orderLines)
@@ -39,18 +51,30 @@ class ValidateOrderProperties extends PropSpec with Checkers {
   private val genCorrectAddress =
     (unvalidatedAddress: UnvalidatedAddress) => Right(Address(unvalidatedAddress.addressLine))
 
-  property("validate") {
-    check(forAll(genUnvalidatedOrder) { unvalidatedOrder =>
+  property("validation doesn't change input data") {
+    check(forAll(genValidUnvalidatedOrder) { unvalidatedOrder =>
       ValidateOrder.validateOrder(_ => true, genCorrectAddress, unvalidatedOrder) match {
         case Valid(Order(OrderId(orderId), CustomerInformation(address, emailAddress), orderLines)) =>
-          orderId == unvalidatedOrder.orderId
-        case Invalid(_) =>
-          false
+          orderId == unvalidatedOrder.orderId &&
+            address.addressLine == unvalidatedOrder.customerInformation.address.addressLine &&
+            emailAddress.string == unvalidatedOrder.customerInformation.emailAddress &&
+            compareOrderLines(orderLines, unvalidatedOrder.orderLines)
+        case _ => false
       }
     })
   }
 
-  def numStrGen(n: Int): Gen[String] = Gen.listOfN(n, Gen.numChar).map(_.mkString)
-  def strGen(n: Int): Gen[String] = Gen.choose(1, n).flatMap(n => Gen.listOfN(n, Gen.numChar).map(_.mkString))
+  private def compareOrderLines(orderLines: List[OrderLine],
+                                unvalidatedOrderLines: List[UnvalidatedOrderLine]): Boolean = {
+    (orderLines zip unvalidatedOrderLines) forall compareIndividualOrderLines
+  }
 
+  def compareIndividualOrderLines(orderLines: (OrderLine, UnvalidatedOrderLine)): Boolean = {
+    orderLines match {
+      case (orderLine, unvalidatedOrderLine) =>
+        orderLine.orderLineId.string == unvalidatedOrderLine.orderLineId &&
+          ProductCode.stringValue(orderLine.productCode) == unvalidatedOrderLine.productCode &&
+          ProductQuantity.decimalQuantity(orderLine.quantity) == unvalidatedOrderLine.quantity
+    }
+  }
 }

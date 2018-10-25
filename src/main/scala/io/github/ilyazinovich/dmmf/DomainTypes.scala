@@ -142,6 +142,13 @@ object ProductCode {
       .filterOrElse(checkProductCodeExist, Error(s"Product code does not exist: $string"))
   }
 
+  def stringValue(productCode: ProductCode): String = {
+    productCode match {
+      case WidgetCode(string) => string
+      case GadgetCode(string) => string
+    }
+  }
+
   private def createWithoutVerifyingExistence(string: String): Either[Error, ProductCode] = {
     if (string.startsWith("W")) WidgetCode.create(string)
     else if (string.startsWith("G")) GadgetCode.create(string)
