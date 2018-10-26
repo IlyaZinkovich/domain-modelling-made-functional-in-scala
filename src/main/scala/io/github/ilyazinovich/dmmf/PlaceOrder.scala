@@ -18,7 +18,7 @@ object PlaceOrder {
       validateOrder(checkProductCodeExist, checkAddressExist, unvalidatedOrder)
     for {
       order <- orderValidationResult.toEither
-      pricedOrder <- priceOrder(order, getProductPrice)
+      pricedOrder <- priceOrder(order, getProductPrice).left.map(_.map(pricingError => Error(pricingError.message())))
     } yield createEvents(acknowledgeOrder(createAcknowledgementLetter, sendAcknowledgement, pricedOrder), pricedOrder)
   }
 

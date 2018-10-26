@@ -196,21 +196,43 @@ object ProductQuantity {
   }
 }
 
+sealed trait PricingError {
+
+  def message(): String
+}
+
+case class NegativePriceError(price: Double) extends PricingError {
+
+  override def message(): String = s"Price $price cannot be less than 0.0"
+}
+
+case class TooHighPrice(price: Double, limit: Double) extends PricingError {
+
+  override def message(): String = s"Price $price cannot be more than $limit"
+}
+
+case class TooLargeBillingAmount(billingAmount: Double, limit: Double) extends PricingError {
+
+  override def message(): String = s"Billing amount $billingAmount cannot be more than $limit"
+}
+
 object Price {
+
+  private val limit = 1000.00D
 
   def value(price: Price): Double = price match {
     case Price(value) => value
   }
 
-  def multiply(price: Price, quantity: ProductQuantity): Either[Error, Price] = {
+  def multiply(price: Price, quantity: ProductQuantity): Either[PricingError, Price] = {
     val decimalQuantity = ProductQuantity.decimalQuantity(quantity)
     Price.create(decimalQuantity * price.double)
   }
 
-  def create(double: Double): Either[Error, Price] = {
-    if (double < 0.0D) Left(Error(s"Price cannot be less than 0.0"))
-    else if (double > 1000.00D) Left(Error(s"Price cannot be more than 1000.00"))
-    else Right(new Price(double))
+  def create(decimalPrice: Double): Either[PricingError, Price] = {
+    if (decimalPrice < 0.0D) Left(NegativePriceError(decimalPrice))
+    else if (decimalPrice > limit) Left(TooHighPrice(decimalPrice, limit))
+    else Right(new Price(decimalPrice))
   }
 
   private def apply(double: Double): Price = new Price(double)
@@ -218,15 +240,16 @@ object Price {
 
 object BillingAmount {
 
-  def total(prices: List[Price]): Either[Error, BillingAmount] = {
+  private val limit = 10000.00D
+
+  def total(prices: List[Price]): Either[PricingError, BillingAmount] = {
     val totalPrice = prices.map(Price.value).sum
     create(totalPrice)
   }
 
-  def create(double: Double): Either[Error, BillingAmount] = {
-    if (double < 0.0D) Left(Error(s"Billing amount cannot be less than 0.0"))
-    else if (double > 10000.00D) Left(Error(s"Billing amount cannot be more than 10000.00"))
-    else Right(new BillingAmount(double))
+  def create(decimalBillingAmount: Double): Either[PricingError, BillingAmount] = {
+    if (decimalBillingAmount > limit) Left(TooLargeBillingAmount(decimalBillingAmount, limit))
+    else Right(new BillingAmount(decimalBillingAmount))
   }
 
   private def apply(double: Double): BillingAmount = new BillingAmount(double)
