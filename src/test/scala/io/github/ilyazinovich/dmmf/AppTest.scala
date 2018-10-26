@@ -50,7 +50,7 @@ class AppTest extends FlatSpec with Matchers {
       getProductPrice, createAcknowledgementLetter, sendAcknowledgement)
     placeOrderEvents match {
       case Right(List(billableOrderPlaced: BillableOrderPlaced, orderPlaced: OrderPlaced, acknowledgementSent: AcknowledgementSent)) => {
-        assert(billableOrderPlaced.amountToBill.double == 120.0)
+        assert(billableOrderPlaced.amountToBill.value == 120.0)
       }
     }
   }

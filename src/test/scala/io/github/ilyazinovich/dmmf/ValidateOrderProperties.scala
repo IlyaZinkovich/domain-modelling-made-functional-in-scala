@@ -57,7 +57,7 @@ class ValidateOrderProperties extends PropSpec with Checkers {
         case Valid(Order(OrderId(orderId), CustomerInformation(address, emailAddress), orderLines)) =>
           orderId == unvalidatedOrder.orderId &&
             address.addressLine == unvalidatedOrder.customerInformation.address.addressLine &&
-            emailAddress.string == unvalidatedOrder.customerInformation.emailAddress &&
+            emailAddress.value == unvalidatedOrder.customerInformation.emailAddress &&
             compareOrderLines(orderLines, unvalidatedOrder.orderLines)
         case _ => false
       }
@@ -72,8 +72,8 @@ class ValidateOrderProperties extends PropSpec with Checkers {
   def compareIndividualOrderLines(orderLines: (OrderLine, UnvalidatedOrderLine)): Boolean = {
     orderLines match {
       case (orderLine, unvalidatedOrderLine) =>
-        orderLine.orderLineId.string == unvalidatedOrderLine.orderLineId &&
-          ProductCode.stringValue(orderLine.productCode) == unvalidatedOrderLine.productCode &&
+        orderLine.orderLineId.value == unvalidatedOrderLine.orderLineId &&
+          ProductCode.value(orderLine.productCode) == unvalidatedOrderLine.productCode &&
           ProductQuantity.decimalQuantity(orderLine.quantity) == unvalidatedOrderLine.quantity
     }
   }

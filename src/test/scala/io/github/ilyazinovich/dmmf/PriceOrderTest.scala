@@ -68,9 +68,9 @@ class PriceOrderTest extends PropSpec with Checkers {
           val totalOrderLinesPrice =
             unvalidatedOrderLinesPriceTotal(order, getProductPrice)
           val totalPricedOrderLinesPrice =
-            pricedOrderLines.map(pricedOrderLine => pricedOrderLine.price.double).sum
+            pricedOrderLines.map(pricedOrderLine => pricedOrderLine.price.value).sum
           totalPricedOrderLinesPrice == totalOrderLinesPrice &&
-            totalPricedOrderLinesPrice == billingAmount.double
+            totalPricedOrderLinesPrice == billingAmount.value
         case Left(errors) =>
           errors match {
             case NonEmptyList(TooLargeBillingAmount(billingAmount, limit), Nil) =>
@@ -87,7 +87,7 @@ class PriceOrderTest extends PropSpec with Checkers {
 
   private def unvalidatedOrderLinesPriceTotal(order: Order, getProductPrice: GetProductPrice) = {
     order.orderLines.map(orderLine => orderLine.productCode)
-      .map(getProductPrice).map(price => price.double).sum
+      .map(getProductPrice).map(price => price.value).sum
   }
 
   case object GeneratorException extends RuntimeException

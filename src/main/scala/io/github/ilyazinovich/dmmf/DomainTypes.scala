@@ -2,101 +2,93 @@ package io.github.ilyazinovich.dmmf
 
 case class Error(cause: String)
 
-case class String50 private(string: String)
+case class String50 private(value: String)
 
-case class EmailAddress private(string: String)
+case class EmailAddress private(value: String)
 
-case class ZipCode private(string: String)
+case class ZipCode private(value: String)
 
-case class OrderId private(string: String)
+case class OrderId private(value: String)
 
-case class OrderLineId private(string: String)
+case class OrderLineId private(value: String)
 
 sealed trait ProductCode
 
-case class WidgetCode private(string: String) extends ProductCode
+case class WidgetCode private(value: String) extends ProductCode
 
-case class GadgetCode private(string: String) extends ProductCode
+case class GadgetCode private(value: String) extends ProductCode
 
 sealed trait ProductQuantity
 
-case class UnitQuantity private(integer: Int) extends ProductQuantity
+case class UnitQuantity private(value: Int) extends ProductQuantity
 
-case class KilogramQuantity private(double: Double) extends ProductQuantity
+case class KilogramQuantity private(value: Double) extends ProductQuantity
 
-case class Price private(double: Double)
+case class Price private(value: Double)
 
-case class BillingAmount private(double: Double)
+case class BillingAmount private(value: Double)
 
 case class PdfAttachment(name: String, bytes: Array[Byte])
 
 object String50 {
 
-  def create(string: String): Either[Error, String50] = {
-    if (string.length <= 50) Right(new String50(string))
+  def create(value: String): Either[Error, String50] = {
+    if (value.length <= 50) Right(new String50(value))
     else Left(Error("String is longer than 50 characters"))
   }
 
-  private def apply(string: String) = new String50(string)
+  private def apply(value: String) = new String50(value)
 }
 
 object EmailAddress {
 
   private val EmailPattern = "(.*@.*)".r
 
-  def create(string: String): Either[Error, EmailAddress] = {
-    string match {
+  def create(value: String): Either[Error, EmailAddress] = {
+    value match {
       case "" => Left(Error("Email cannot be empty"))
       case EmailPattern(email) => Right(new EmailAddress(email))
       case _ => Left(Error("String does not match email pattern"))
     }
   }
 
-  private def apply(string: String): EmailAddress = new EmailAddress(string)
+  private def apply(value: String): EmailAddress = new EmailAddress(value)
 }
 
 object ZipCode {
 
   private val ZipCodePattern = "(\\d{5})".r
 
-  def create(string: String): Either[Error, ZipCode] = {
-    string match {
+  def create(value: String): Either[Error, ZipCode] = {
+    value match {
       case ZipCodePattern(zipCodeString) => Right(new ZipCode(zipCodeString))
       case _ => Left(Error("Input is not 5-digit string"))
     }
   }
 
-  private def apply(string: String): ZipCode = new ZipCode(string)
+  private def apply(value: String): ZipCode = new ZipCode(value)
 }
 
 object OrderId {
 
-  def create(string: String): Either[Error, OrderId] = {
-    if (string.isEmpty) {
-      Left(Error("OrderId cannot be empty"))
-    } else if (string.length > 50) {
-      Left(Error("OrderId cannot be longer than 50 characters"))
-    } else {
-      Right(new OrderId(string))
-    }
+  def create(value: String): Either[Error, OrderId] = {
+    if (value.isEmpty) Left(Error("OrderId cannot be empty"))
+    else if (value.length > 50) Left(Error("OrderId cannot be longer than 50 characters"))
+    else Right(new OrderId(value))
   }
 
-  private def apply(string: String): OrderId = new OrderId(string)
+  private def apply(value: String): OrderId = new OrderId(value)
 }
 
 object OrderLineId {
 
-  def create(string: String): Either[Error, OrderLineId] = {
-    if (string.isEmpty) {
-      Left(Error("OrderId cannot be empty"))
-    } else if (string.length > 50) {
-      Left(Error("OrderId cannot be longer than 50 characters"))
-    } else {
-      Right(new OrderLineId(string))
-    }
+  def create(value: String): Either[Error, OrderLineId] = {
+    if (value.isEmpty) Left(Error("OrderId cannot be empty"))
+    else if (value.length > 50) Left(Error("OrderId cannot be longer than 50 characters"))
+    else Right(new OrderLineId(value))
   }
 
-  private def apply(string: String): OrderLineId = new OrderLineId(string)
+  private def apply(value: String): OrderLineId = new OrderLineId(value)
 }
 
 case class Address(addressLine: String)
@@ -109,81 +101,81 @@ object WidgetCode {
 
   private val WidgetCodePattern = "(W\\d{4})".r
 
-  def create(string: String): Either[Error, WidgetCode] = {
-    string match {
+  def create(value: String): Either[Error, WidgetCode] = {
+    value match {
       case WidgetCodePattern(widgetCodeString) => Right(new WidgetCode(widgetCodeString))
       case _ => Left(Error("Input is not a 5 chars string starting with W"))
     }
   }
 
-  private def apply(string: String): WidgetCode = new WidgetCode(string)
+  private def apply(value: String): WidgetCode = new WidgetCode(value)
 }
 
 object GadgetCode {
 
   private val GadgetCodePattern = "(G\\d{4})".r
 
-  def create(string: String): Either[Error, GadgetCode] = {
-    string match {
+  def create(value: String): Either[Error, GadgetCode] = {
+    value match {
       case GadgetCodePattern(gadgetCodeString) => Right(new GadgetCode(gadgetCodeString))
       case _ => Left(Error("Input is not a 5 chars string starting with G"))
     }
   }
 
-  private def apply(string: String): GadgetCode = new GadgetCode(string)
+  private def apply(value: String): GadgetCode = new GadgetCode(value)
 }
 
 object ProductCode {
 
   type CheckProductCodeExist = ProductCode => Boolean
 
-  def create(string: String, checkProductCodeExist: CheckProductCodeExist): Either[Error, ProductCode] = {
-    createWithoutVerifyingExistence(string)
-      .filterOrElse(checkProductCodeExist, Error(s"Product code does not exist: $string"))
+  def create(value: String, checkProductCodeExist: CheckProductCodeExist): Either[Error, ProductCode] = {
+    createWithoutVerifyingExistence(value)
+      .filterOrElse(checkProductCodeExist, Error(s"Product code does not exist: $value"))
   }
 
-  def stringValue(productCode: ProductCode): String = {
+  def value(productCode: ProductCode): String = {
     productCode match {
-      case WidgetCode(string) => string
-      case GadgetCode(string) => string
+      case WidgetCode(value) => value
+      case GadgetCode(value) => value
     }
   }
 
-  private def createWithoutVerifyingExistence(string: String): Either[Error, ProductCode] = {
-    if (string.startsWith("W")) WidgetCode.create(string)
-    else if (string.startsWith("G")) GadgetCode.create(string)
-    else Left(Error(s"Unrecognized product code format: $string"))
+  private def createWithoutVerifyingExistence(value: String): Either[Error, ProductCode] = {
+    if (value.startsWith("W")) WidgetCode.create(value)
+    else if (value.startsWith("G")) GadgetCode.create(value)
+    else Left(Error(s"Unrecognized product code format: $value"))
   }
 }
 
 object UnitQuantity {
 
-  def create(integer: Int): Either[Error, UnitQuantity] = {
-    if (integer < 1) Left(Error("Input integer is less than 1"))
-    else if (integer > 1000) Left(Error("Input integer is more than 1000"))
-    else Right(new UnitQuantity(integer))
+  def create(value: Int): Either[Error, UnitQuantity] = {
+    if (value < 1) Left(Error("Input integer is less than 1"))
+    else if (value > 1000) Left(Error("Input integer is more than 1000"))
+    else Right(new UnitQuantity(value))
   }
 
-  private def apply(integer: Int): UnitQuantity = new UnitQuantity(integer)
+  private def apply(value: Int): UnitQuantity = new UnitQuantity(value)
 }
 
 object KilogramQuantity {
 
-  def create(double: Double): Either[Error, KilogramQuantity] = {
-    if (double < 0.05D) Left(Error("Input double is less than 0.05"))
-    else if (double > 100.00D) Left(Error("Input double is more than 100.00"))
-    else Right(new KilogramQuantity(double))
+  def create(value: Double): Either[Error, KilogramQuantity] = {
+    if (value < 0.05D) Left(Error("Input double is less than 0.05"))
+    else if (value > 100.00D) Left(Error("Input double is more than 100.00"))
+    else Right(new KilogramQuantity(value))
   }
 
-  private def apply(double: Double): KilogramQuantity = new KilogramQuantity(double)
+  private def apply(value: Double): KilogramQuantity = new KilogramQuantity(value)
 }
 
 object ProductQuantity {
 
   def decimalQuantity(orderQuantity: ProductQuantity): Double = {
     orderQuantity match {
-      case UnitQuantity(integer) => integer.toDouble
-      case KilogramQuantity(double) => double
+      case UnitQuantity(value) => value.toDouble
+      case KilogramQuantity(value) => value
     }
   }
 
@@ -226,7 +218,7 @@ object Price {
 
   def multiply(price: Price, quantity: ProductQuantity): Either[PricingError, Price] = {
     val decimalQuantity = ProductQuantity.decimalQuantity(quantity)
-    Price.create(decimalQuantity * price.double)
+    Price.create(decimalQuantity * price.value)
   }
 
   def create(decimalPrice: Double): Either[PricingError, Price] = {
@@ -235,7 +227,7 @@ object Price {
     else Right(new Price(decimalPrice))
   }
 
-  private def apply(double: Double): Price = new Price(double)
+  private def apply(value: Double): Price = new Price(value)
 }
 
 object BillingAmount {
@@ -252,7 +244,7 @@ object BillingAmount {
     else Right(new BillingAmount(decimalBillingAmount))
   }
 
-  private def apply(double: Double): BillingAmount = new BillingAmount(double)
+  private def apply(value: Double): BillingAmount = new BillingAmount(value)
 }
 
 case class PricedOrderLine(orderLineId: OrderLineId, productCode: ProductCode,
